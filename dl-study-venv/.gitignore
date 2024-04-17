@@ -187,4 +187,8 @@ pyrightconfig.json
 pyvenv.cfg
 pip-selfcheck.json
 
+
+### dataset ###
+data/c02/FashionMNIST/
+
 # End of https://www.toptal.com/developers/gitignore/api/python,venv
