@@ -128,3 +128,8 @@
   - Conv1d : 커널이 1차원으로 이동(x축). 그래프 곡선을 완만하게 만들때 사용
   - Conv2d : 커널이 2차원으로 이동(x, y축). 이미지의 특성을 추출할때 사용
   - Conv3d : 커널이 3차원으로 이동(x, y, z축)
+- 이미지 데이터 주의사항
+  - cnn의 input shape와 pyplot의 input shape가 다르다.
+    - cnn 모델의 input : (channel, width, height)
+    - pyplot input : (height, width, channel)
+    - torchvision.transforms.functional.to_tensor 를 통해 img 읽을 경우, input의 shape 상관없이 (c, h, w)를 리턴한다.
