@@ -2,9 +2,10 @@
 data/
 
 # 가상환경
+uv/
+.uv/
 venv/
-env/
-*.venv
+.venv/
 
 # Python
 __pycache__/
