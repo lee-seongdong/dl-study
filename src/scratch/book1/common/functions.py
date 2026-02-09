@@ -208,21 +208,22 @@ def numerical_gradient(f, x):
         각 변수에 대한 편미분으로 구성된 기울기 벡터
     """
     h = 1e-4
-    grad = np.zeros_like(x) # x와 같은 shape인 배열 생성
-    
+    grad = np.zeros_like(x) # x와 같은 shape
+
     for idx in range(x.size):
-        tmp_val = x[idx]
+        multi_idx = np.unravel_index(idx, x.shape)
+        tmp_val = x[multi_idx]
         # f(x+h) 계산
-        x[idx] = tmp_val + h
+        x[multi_idx] = tmp_val + h
         fxh1 = f(x)
 
         # f(x-h) 계산
-        x[idx] = tmp_val - h
+        x[multi_idx] = tmp_val - h
         fxh2 = f(x)
 
         # 중앙 차분(수치 미분)
-        grad[idx] = (fxh1 - fxh2) / (2*h)
-        x[idx] = tmp_val # 값 복원
+        grad[multi_idx] = (fxh1 - fxh2) / (2*h)
+        x[multi_idx] = tmp_val # 값 복원
     
     return grad
 
