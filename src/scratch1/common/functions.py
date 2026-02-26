@@ -278,3 +278,37 @@ def gradient_descent_with_history(f, init_x, lr=0.01, step_num=100):
     
     return x, np.array(history)
 
+def im2col(input_data, filter_h, filter_w, stride=1, pad=0):
+    # input_data: 4차원 데이터(N, C, H, W)
+    # return 2차원 배열(N, -1)
+    N, C, H, W = input_data.shape
+    OH = (H + 2*pad - filter_h) // stride + 1
+    OW = (H + 2*pad - filter_w) // stride + 1
+
+    img = np.pad(input_data, [(0, 0), (0, 0), (pad, pad), (pad, pad)], 'constant')
+    col = np.zeros((N, C, filter_h, filter_w, OH, OW))
+
+    for y in range(filter_h):
+        y_max = y + stride*OH
+        for x in range(filter_w):
+            x_max = x + stride*OW
+            col[:, :, y, x, :, :] = img[:, :, y:y_max:stride, x:x_max:stride]
+
+    col = col.transpose(0, 4, 5, 1, 2, 3).reshape(N * OH * OW, -1)
+
+    return col
+
+def col2im(col, input_shape, filter_h, filter_w, stride=1, pad=0):
+    N, C, H, W = input_shape
+    OH = (H + 2*pad - filter_h)//stride + 1
+    OW = (W + 2*pad - filter_w)//stride + 1
+    col = col.reshape(N, OH, OW, C, filter_h, filter_w).transpose(0, 3, 4, 5, 1, 2)
+
+    img = np.zeros((N, C, H + 2*pad + stride - 1, W + 2*pad + stride - 1))
+    for y in range(filter_h):
+        y_max = y + stride*OH
+        for x in range(filter_w):
+            x_max = x + stride*OW
+            img[:, :, y:y_max:stride, x:x_max:stride] += col[:, :, y, x, :, :]
+
+    return img[:, :, pad:H + pad, pad:W + pad]
