@@ -38,3 +38,64 @@ def create_co_matrix(corpus, vocab_size, window_size=1):
                 co_matrix[word_id, right_word_id] += 1
     
     return co_matrix
+
+
+def cos_similarity(x, y, eps=1e-8):
+    nx = x / (np.sqrt(np.sum(x**2)) + eps)
+    ny = y / (np.sqrt(np.sum(y**2)) + eps)
+    return np.dot(nx, ny)
+
+
+def most_similar(query, word_to_id, id_to_word, word_matrix, top=5):
+    # vec 검색
+    if query not in word_to_id:
+        print("%s을(를) 찾을 수 없습니다." % query)
+        return
+    
+    print('\n[query] ' + query)
+    query_id = word_to_id[query]
+    query_vec = word_matrix[query_id]
+
+    # 코사인 유사도 계산
+    vocab_size = len(id_to_word)
+    similarity = np.zeros(vocab_size)
+    for i in range(vocab_size):
+        similarity[i] = cos_similarity(word_matrix[i], query_vec)
+    
+    # 유사도 내림차순 출력
+    count = 0
+    for i in (-1 * similarity).argsort(): # argsort: 정렬된 인덱스반환
+        if id_to_word[i] == query:
+            continue
+        
+        print(' %s: %s' % (id_to_word[i], similarity[i]))
+        count += 1
+        if count >= top:
+            return
+
+
+# 양의 상호정보량
+# P(x) = C(x) / N
+# P: x등장 확률, C: x 등장 횟수, N: 단어사전 크기
+# PMI(x, y) = P(x, y) / P(x)P(y) 
+#           = log2( (C(x, y)/N) / (C(x)/N) * (C(y)/N) )
+#           = log2( C(x, y)*N / C(x) * C(y) )
+# PPMI(x, y) = max(0, PMI(x, y))
+def ppmi(C, verbose=False, eps=1e-8):
+    M = np.zeros_like(C, dtype=np.float32)
+    N = np.sum(C)
+    S = np.sum(C, axis=0)
+    total = C.shape[0] * C.shape[1]
+    cnt = 0
+
+    for i in range(C.shape[0]):
+        for j in range(C.shape[1]):
+            pmi = np.log2(C[i, j] * N / (S[i]*S[j]) + eps)
+            M[i, j] = max(0, pmi)
+
+            if verbose:
+                cnt += 1
+                if cnt % (total/100) == 0:
+                    print('%.1f%% 완료' % (100*cnt/total))
+    
+    return M
