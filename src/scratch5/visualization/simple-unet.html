@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Simple U-Net 구조도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* 레이아웃: 한 열 문서. 큰 U자 그림 아래에 코드와 설명을 나란히 두고 단계 버튼으로 함께 움직인다 */
+:root {
+  --bg: #F4F6F9;
+  --surface: #FFFFFF;
+  --fg: #1A1E26;
+  --muted: #586172;
+  --line: #D8DDE6;
+  --down: #1D6AAE;
+  --down-fill: #DCE9F6;
+  --up: #7646C9;
+  --up-fill: #EAE2F8;
+  --skip: #B06F10;
+  --skip-fill: #F7E9CF;
+  --code-bg: #EBEFF4;
+  --hl: #FFF0B8;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151B; --surface: #1A1F28; --fg: #E5E9F0; --muted: #9AA4B4; --line: #2C3441;
+    --down: #5CA8EE; --down-fill: #16314A; --up: #B293F4; --up-fill: #2B2345;
+    --skip: #E5AE4E; --skip-fill: #392C12; --code-bg: #161B23; --hl: #3D3414;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151B; --surface: #1A1F28; --fg: #E5E9F0; --muted: #9AA4B4; --line: #2C3441;
+  --down: #5CA8EE; --down-fill: #16314A; --up: #B293F4; --up-fill: #2B2345;
+  --skip: #E5AE4E; --skip-fill: #392C12; --code-bg: #161B23; --hl: #3D3414;
+  color-scheme: dark;
+}
+
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.7; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 44px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 64px;
+}
+header, section { display: grid; gap: 18px; min-width: 0; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .05em; color: var(--muted); margin: 0; overflow-wrap: anywhere; }
+h1 { font-size: clamp(28px, 4.4vw, 42px); line-height: 1.25; font-weight: 700; letter-spacing: -0.015em; margin: 0; text-wrap: balance; }
+h2 { font-size: 22px; line-height: 1.35; font-weight: 700; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 66ch; }
+.lead { font-size: 17px; }
+code, .mono { font-family: var(--font-mono); }
+p code { font-size: .9em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+
+figure { margin: 0; display: grid; gap: 12px; min-width: 0; }
+figcaption { color: var(--muted); font-size: 14px; max-width: 72ch; }
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.scroll svg { display: block; width: 100%; height: auto; }
+.scroll .wide { min-width: 720px; }
+.scroll .mid { min-width: 600px; }
+
+/* SVG 공통 */
+.dg { color: var(--fg); font-family: var(--font-body); }
+.dg text { fill: currentColor; font-size: 12.5px; }
+.dg text.mono { font-family: var(--font-mono); font-size: 11.5px; }
+.dg text.muted { fill: var(--muted); }
+.dg text.k-skip { fill: var(--skip); font-weight: 600; }
+.dg text.k-down { fill: var(--down); font-weight: 600; }
+.dg text.k-up { fill: var(--up); font-weight: 600; }
+.dg text.big { font-size: 17px; font-weight: 700; }
+.fm { stroke-width: 1.5; }
+.fm.down { fill: var(--down-fill); stroke: var(--down); }
+.fm.up { fill: var(--up-fill); stroke: var(--up); }
+.fm.skip { fill: var(--skip-fill); stroke: var(--skip); }
+.fm.io { fill: var(--surface); stroke: var(--fg); }
+.arr { fill: none; stroke-width: 1.6; }
+.arr.down { stroke: var(--down); }
+.arr.up { stroke: var(--up); }
+.arr.skip { stroke: var(--skip); stroke-dasharray: 6 4; }
+.arr.fg { stroke: var(--fg); }
+.ah.down { fill: var(--down); }
+.ah.up { fill: var(--up); }
+.ah.skip { fill: var(--skip); }
+.ah.fg { fill: var(--fg); }
+#unet [data-step] { transition: opacity .25s ease; }
+#unet [data-step].future { opacity: .2; }
+#unet [data-step].active .fm { stroke-width: 3.2; }
+#unet [data-step].active .arr { stroke-width: 2.8; }
+#unet [data-step].active text.mono { font-weight: 600; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 14px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.sw { width: 18px; height: 12px; border-radius: 2px; border: 1.5px solid; flex: none; }
+.sw.down { background: var(--down-fill); border-color: var(--down); }
+.sw.up { background: var(--up-fill); border-color: var(--up); }
+.sw.skip { background: transparent; border: none; border-top: 2px dashed var(--skip); height: 0; }
+
+/* 단계 패널 */
+.stepper { display: grid; gap: 14px; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.btn {
+  font: 500 14px/1 var(--font-body); color: var(--fg); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; cursor: pointer;
+}
+.btn:hover { border-color: var(--muted); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn:focus-visible, .chip:focus-visible { outline: 2px solid var(--down); outline-offset: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: 500 13px/1 var(--font-mono); min-width: 34px; padding: 8px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.panel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 820px) { .panel { grid-template-columns: minmax(0, 1fr); } }
+pre.code {
+  margin: 0; background: var(--code-bg); border-radius: 10px; padding: 14px 0;
+  font: 13px/1.75 var(--font-mono); overflow-x: auto; min-width: 0;
+}
+pre.code .ln { display: block; padding: 0 16px; white-space: pre; }
+pre.code .ln.on { background: var(--hl); }
+pre.code .cm { color: var(--muted); }
+.explain {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 18px 20px; display: grid; gap: 12px; align-content: start; min-width: 0;
+}
+.explain .no { font: 500 12px/1 var(--font-mono); color: var(--muted); letter-spacing: .04em; }
+.explain h3 { margin: 0; font-size: 19px; line-height: 1.35; }
+.explain .shape { font: 600 15px/1.5 var(--font-mono); color: var(--fg); overflow-wrap: anywhere; }
+.explain .def { font: 12.5px/1.6 var(--font-mono); background: var(--code-bg); border-radius: 6px; padding: 8px 10px; overflow-x: auto; white-space: pre; }
+.explain .def[hidden] { display: none; }
+.explain p { font-size: 15.5px; }
+
+/* 해상도 비교 */
+.demo { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 18px; max-width: 640px; }
+.demo div { display: grid; gap: 8px; justify-items: start; }
+.demo canvas { width: 100%; max-width: 180px; aspect-ratio: 1; image-rendering: pixelated; border-radius: 6px; background: #000; }
+.demo b { font: 600 13px/1.4 var(--font-mono); }
+.demo small { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+pre.snippet { margin: 0; background: var(--code-bg); border-radius: 10px; padding: 14px 16px; font: 13px/1.75 var(--font-mono); overflow-x: auto; }
+pre.snippet .cm { color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) { #unet [data-step] { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">src/scratch5/step9/01_simple_unet.ipynb</p>
+    <h1>Simple U-Net 구조도</h1>
+    <p class="lead">이 U-Net은 28×28 이미지를 받아 같은 크기의 이미지를 출력합니다. 왼쪽 길에서는 가로세로를 절반씩 두 번 줄이면서 채널을 1개에서 256개까지 늘리고, 오른쪽 길에서는 다시 두 번 키우면서 채널을 줄입니다. 같은 해상도에 있는 왼쪽과 오른쪽은 스킵 연결로 직접 이어집니다.</p>
+  </header>
+
+  <section aria-labelledby="h-flow">
+    <h2 id="h-flow">forward()를 한 줄씩 따라가기</h2>
+    <figure>
+      <div class="scroll">
+        <svg id="unet" class="dg wide" viewBox="-64 10 860 535" role="img" aria-label="U-Net의 텐서 흐름. 입력 1×28×28이 down1, maxpool, down2, maxpool, bot1을 거쳐 256×7×7까지 줄어든 뒤, upsample과 스킵 연결 cat, up2, upsample, cat, up1, out을 거쳐 1×28×28로 돌아온다.">
+          <defs>
+            <marker id="ah-down" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto"><path class="ah down" d="M0,0 L10,5 L0,10 z"/></marker>
+            <marker id="ah-up" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto"><path class="ah up" d="M0,0 L10,5 L0,10 z"/></marker>
+            <marker id="ah-skip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto"><path class="ah skip" d="M0,0 L10,5 L0,10 z"/></marker>
+          </defs>
+
+          <!-- 해상도 눈금 -->
+          <g>
+            <text class="mono muted" x="-58" y="154">28×28</text>
+            <text class="mono muted" x="-58" y="334">14×14</text>
+            <text class="mono muted" x="-58" y="474">7×7</text>
+          </g>
+
+          <!-- 1 입력 -->
+          <g data-step="1">
+            <rect class="fm io" x="30" y="66" width="6" height="168"/>
+            <text class="mono" x="33" y="252" text-anchor="middle">1×28×28</text>
+            <text class="muted" x="33" y="269" text-anchor="middle">입력</text>
+          </g>
+          <!-- 2 down1 -->
+          <g data-step="2">
+            <line class="arr down" x1="38" y1="150" x2="90" y2="150" marker-end="url(#ah-down)"/>
+            <text class="k-down" x="64" y="140" text-anchor="middle">down1</text>
+            <rect class="fm down" x="92" y="66" width="13" height="168"/>
+            <text class="mono" x="98.5" y="252" text-anchor="middle">64×28×28</text>
+            <text class="muted" x="98.5" y="269" text-anchor="middle">x1</text>
+          </g>
+          <!-- 3 maxpool -->
+          <g data-step="3">
+            <line class="arr down" x1="106" y1="236" x2="148" y2="286" marker-end="url(#ah-down)"/>
+            <text class="k-down" x="136" y="258">maxpool</text>
+            <rect class="fm down" x="150" y="288" width="13" height="84"/>
+            <text class="mono" x="156.5" y="390" text-anchor="middle">64×14×14</text>
+          </g>
+          <!-- 4 down2 -->
+          <g data-step="4">
+            <line class="arr down" x1="165" y1="330" x2="218" y2="330" marker-end="url(#ah-down)"/>
+            <text class="k-down" x="191.5" y="320" text-anchor="middle">down2</text>
+            <rect class="fm down" x="220" y="288" width="20" height="84"/>
+            <text class="mono" x="230" y="390" text-anchor="middle">128×14×14</text>
+            <text class="muted" x="230" y="407" text-anchor="middle">x2</text>
+          </g>
+          <!-- 5 maxpool -->
+          <g data-step="5">
+            <line class="arr down" x1="241" y1="374" x2="278" y2="447" marker-end="url(#ah-down)"/>
+            <text class="k-down" x="268" y="412">maxpool</text>
+            <rect class="fm down" x="280" y="449" width="20" height="42"/>
+            <text class="mono" x="290" y="509" text-anchor="middle">128×7×7</text>
+          </g>
+          <!-- 6 bot1 -->
+          <g data-step="6">
+            <line class="arr down" x1="302" y1="470" x2="353" y2="470" marker-end="url(#ah-down)"/>
+            <text class="k-down" x="327.5" y="460" text-anchor="middle">bot1</text>
+            <rect class="fm down" x="355" y="449" width="34" height="42"/>
+            <text class="mono" x="372" y="509" text-anchor="middle">256×7×7</text>
+            <text class="muted" x="372" y="526" text-anchor="middle">가장 깊은 곳</text>
+          </g>
+          <!-- 7 upsample -->
+          <g data-step="7">
+            <line class="arr up" x1="390" y1="447" x2="428" y2="374" marker-end="url(#ah-up)"/>
+            <text class="k-up" x="400" y="412" text-anchor="end">upsample</text>
+            <rect class="fm up" x="430" y="288" width="34" height="84"/>
+          </g>
+          <!-- 8 cat x2 -->
+          <g data-step="8">
+            <path class="arr skip" d="M230,286 V262 H474 V286" marker-end="url(#ah-skip)"/>
+            <text class="k-skip" x="352" y="254" text-anchor="middle">x2 복사해 이어붙임</text>
+            <rect class="fm skip" x="464" y="288" width="20" height="84"/>
+            <text class="mono" x="457" y="390" text-anchor="middle">384×14×14</text>
+            <text class="muted" x="457" y="407" text-anchor="middle">cat</text>
+          </g>
+          <!-- 9 up2 -->
+          <g data-step="9">
+            <line class="arr up" x1="486" y1="330" x2="533" y2="330" marker-end="url(#ah-up)"/>
+            <text class="k-up" x="509.5" y="320" text-anchor="middle">up2</text>
+            <rect class="fm up" x="535" y="288" width="20" height="84"/>
+            <text class="mono" x="545" y="390" text-anchor="middle">128×14×14</text>
+          </g>
+          <!-- 10 upsample -->
+          <g data-step="10">
+            <line class="arr up" x1="556" y1="286" x2="598" y2="236" marker-end="url(#ah-up)"/>
+            <text class="k-up" x="568" y="258" text-anchor="end">upsample</text>
+            <rect class="fm up" x="600" y="66" width="20" height="168"/>
+          </g>
+          <!-- 11 cat x1 -->
+          <g data-step="11">
+            <path class="arr skip" d="M98.5,64 V36 H626.5 V64" marker-end="url(#ah-skip)"/>
+            <text class="k-skip" x="362" y="28" text-anchor="middle">x1 복사해 이어붙임</text>
+            <rect class="fm skip" x="620" y="66" width="13" height="168"/>
+            <text class="mono" x="616.5" y="252" text-anchor="middle">192×28×28</text>
+            <text class="muted" x="616.5" y="269" text-anchor="middle">cat</text>
+          </g>
+          <!-- 12 up1 -->
+          <g data-step="12">
+            <line class="arr up" x1="635" y1="150" x2="683" y2="150" marker-end="url(#ah-up)"/>
+            <text class="k-up" x="659" y="140" text-anchor="middle">up1</text>
+            <rect class="fm up" x="685" y="66" width="13" height="168"/>
+            <text class="mono" x="691.5" y="252" text-anchor="middle">64×28×28</text>
+          </g>
+          <!-- 13 out -->
+          <g data-step="13">
+            <line class="arr up" x1="700" y1="150" x2="748" y2="150" marker-end="url(#ah-up)"/>
+            <text class="k-up" x="724" y="140" text-anchor="middle">out</text>
+            <rect class="fm io" x="750" y="66" width="6" height="168"/>
+            <text class="mono" x="753" y="252" text-anchor="middle">1×28×28</text>
+            <text class="muted" x="753" y="269" text-anchor="middle">출력</text>
+          </g>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><i class="sw down"></i>인코더: 줄이면서 채널을 늘리는 길</span>
+        <span><i class="sw up"></i>디코더: 키우면서 채널을 줄이는 길</span>
+        <span><i class="sw skip"></i>스킵 연결: 저장한 결과를 복사해 이어붙임</span>
+        <span>사각형 높이는 가로세로 크기, 너비는 채널 수에 비례</span>
+      </div>
+    </figure>
+
+    <div class="stepper">
+      <div class="controls">
+        <button class="btn" id="prev" type="button">이전</button>
+        <button class="btn" id="next" type="button">다음</button>
+        <button class="btn" id="all" type="button">전체 보기</button>
+        <div class="chips" id="chips" role="group" aria-label="단계 선택"></div>
+      </div>
+      <div class="panel">
+        <pre class="code" id="code" aria-label="UNet.forward 코드"></pre>
+        <div class="explain" aria-live="polite">
+          <div class="no" id="sNo"></div>
+          <h3 id="sTitle"></h3>
+          <div class="shape" id="sShape"></div>
+          <div class="def" id="sDef"></div>
+          <p id="sText"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-skip">
+    <h2 id="h-skip">스킵 연결이 없으면 무엇을 잃는가</h2>
+    <p>가장 깊은 곳의 7×7에서 바로 키우면 어떻게 되는지 숫자 하나로 비교했습니다. 노트북과 같은 연산인 <code>MaxPool2d(2)</code> 두 번과 쌍선형 <code>Upsample</code> 두 번을 그대로 적용한 결과입니다.</p>
+    <figure>
+      <div class="demo">
+        <div><canvas id="cv-a" width="28" height="28" aria-label="원본 숫자 3, 28×28"></canvas><b>(a) 28×28</b><small>x1이 가진 해상도입니다.</small></div>
+        <div><canvas id="cv-b" width="7" height="7" aria-label="maxpool 두 번 적용한 7×7"></canvas><b>(b) 7×7</b><small>maxpool 두 번 뒤, 가장 깊은 곳의 해상도입니다.</small></div>
+        <div><canvas id="cv-c" width="28" height="28" aria-label="7×7을 upsample 두 번 적용한 28×28"></canvas><b>(c) 다시 28×28</b><small>(b)를 upsample 두 번으로 키운 결과입니다.</small></div>
+      </div>
+      <figcaption>(c)는 크기가 28×28로 돌아왔지만 획의 경계가 뭉개져 있습니다. 디코더는 이런 정보에 스킵 연결로 받은 (a) 해상도의 정보를 이어붙여서 경계를 다시 정확하게 만들 수 있습니다. 실제 x1과 x2는 이미지가 아니라 여러 채널의 특징 맵이지만, 해상도가 담을 수 있는 정보의 양은 같은 원리로 줄어듭니다.</figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="h-vae">
+    <h2 id="h-vae">VAE와 무엇이 다른가</h2>
+    <figure>
+      <div class="scroll">
+        <svg class="dg mid" viewBox="0 0 780 340" role="img" aria-label="VAE는 784, 200, 20, 200, 784 차원을 한 줄로 지나고, U-Net은 28×28, 14×14, 7×7, 14×14, 28×28을 지나면서 같은 해상도끼리 스킵 연결이 이어진다.">
+          <defs>
+            <marker id="ah2-fg" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path class="ah fg" d="M0,0 L10,5 L0,10 z"/></marker>
+            <marker id="ah2-skip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto"><path class="ah skip" d="M0,0 L10,5 L0,10 z"/></marker>
+          </defs>
+          <!-- VAE -->
+          <text class="big" x="20" y="68">VAE</text>
+          <text class="mono muted" x="20" y="88">01_vae.ipynb</text>
+          <rect class="fm down" x="191" y="25" width="18" height="90"/>
+          <rect class="fm down" x="291" y="47.5" width="18" height="45"/>
+          <rect class="fm io" x="391" y="63" width="18" height="14" style="stroke-width:2.4"/>
+          <rect class="fm up" x="491" y="47.5" width="18" height="45"/>
+          <rect class="fm up" x="591" y="25" width="18" height="90"/>
+          <line class="arr fg" x1="211" y1="70" x2="289" y2="70" marker-end="url(#ah2-fg)"/>
+          <line class="arr fg" x1="311" y1="70" x2="389" y2="70" marker-end="url(#ah2-fg)"/>
+          <line class="arr fg" x1="411" y1="70" x2="489" y2="70" marker-end="url(#ah2-fg)"/>
+          <line class="arr fg" x1="511" y1="70" x2="589" y2="70" marker-end="url(#ah2-fg)"/>
+          <text class="mono" x="200" y="136" text-anchor="middle">x 784</text>
+          <text class="mono" x="300" y="136" text-anchor="middle">200</text>
+          <text class="mono" x="400" y="136" text-anchor="middle">z 20</text>
+          <text class="mono" x="500" y="136" text-anchor="middle">200</text>
+          <text class="mono" x="600" y="136" text-anchor="middle">x̂ 784</text>
+          <text class="muted" x="650" y="66">모든 정보가</text>
+          <text class="muted" x="650" y="84">숫자 20개인 z를 통과</text>
+
+          <!-- U-Net -->
+          <text class="big" x="20" y="258">U-Net</text>
+          <text class="mono muted" x="20" y="278">01_simple_unet.ipynb</text>
+          <path class="arr skip" d="M200,213 C200,160 600,160 600,211" marker-end="url(#ah2-skip)"/>
+          <path class="arr skip" d="M300,235.5 C300,197 500,197 500,233.5" marker-end="url(#ah2-skip)"/>
+          <text class="k-skip" x="400" y="168" text-anchor="middle">스킵 연결</text>
+          <rect class="fm down" x="191" y="215" width="18" height="90"/>
+          <rect class="fm down" x="291" y="237.5" width="18" height="45"/>
+          <rect class="fm down" x="391" y="249" width="18" height="22"/>
+          <rect class="fm up" x="491" y="237.5" width="18" height="45"/>
+          <rect class="fm up" x="591" y="215" width="18" height="90"/>
+          <line class="arr fg" x1="211" y1="260" x2="289" y2="260" marker-end="url(#ah2-fg)"/>
+          <line class="arr fg" x1="311" y1="260" x2="389" y2="260" marker-end="url(#ah2-fg)"/>
+          <line class="arr fg" x1="411" y1="260" x2="489" y2="260" marker-end="url(#ah2-fg)"/>
+          <line class="arr fg" x1="511" y1="260" x2="589" y2="260" marker-end="url(#ah2-fg)"/>
+          <text class="mono" x="200" y="326" text-anchor="middle">28×28</text>
+          <text class="mono" x="300" y="326" text-anchor="middle">14×14</text>
+          <text class="mono" x="400" y="326" text-anchor="middle">7×7</text>
+          <text class="mono" x="500" y="326" text-anchor="middle">14×14</text>
+          <text class="mono" x="600" y="326" text-anchor="middle">28×28</text>
+          <text class="muted" x="650" y="256">해상도별 정보가</text>
+          <text class="muted" x="650" y="274">점선으로 바로 전달</text>
+        </svg>
+      </div>
+      <figcaption>두 모델 모두 줄였다가 다시 키우는 모양입니다. 차이는 점선입니다. VAE는 모든 정보가 숫자 20개인 z를 통과해야 하고, U-Net은 스킵 연결로 해상도별 정보를 디코더에 그대로 건넵니다.</figcaption>
+    </figure>
+    <p>VAE의 병목에는 목적이 있습니다. 정보를 z로 압축하고 z를 N(0, I) 근처에 모아 두어야, 생성할 때 N(0, I)에서 뽑은 z로 새 이미지를 만들 수 있습니다. U-Net에는 이런 잠재변수가 없어서 혼자서는 생성 모델이 아닙니다. 대신 입력과 같은 모양의 출력을 픽셀 단위로 정확하게 만드는 일에 집중합니다.</p>
+  </section>
+
+  <section aria-labelledby="h-diff">
+    <h2 id="h-diff">확산모델에서 U-Net이 맡는 일</h2>
+    <p>확산모델에서 U-Net은 노이즈가 섞인 이미지 x_t를 받아 그 안에 섞인 노이즈 ε를 예측합니다. 입력과 출력이 모두 1×28×28이어야 하므로 U-Net의 구조가 그대로 맞습니다. 같은 이미지라도 단계 t에 따라 섞인 노이즈의 양이 다르므로 t도 입력해야 하고, <code>02_diffusion_model.ipynb</code>의 <code>pos_encoding</code>이 정수 t를 벡터 v로 바꿉니다.</p>
+    <figure>
+      <div class="scroll">
+        <svg class="dg mid" viewBox="0 0 720 230" role="img" aria-label="x_t가 U-Net을 거쳐 예측 노이즈가 되고, t는 pos_encoding으로 벡터 v가 되어 U-Net의 각 ConvBlock에 더해진다.">
+          <defs>
+            <marker id="ah3-fg" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto"><path class="ah fg" d="M0,0 L10,5 L0,10 z"/></marker>
+          </defs>
+          <text class="muted" x="80" y="40" text-anchor="middle">노이즈 섞인 이미지</text>
+          <rect class="fm io" x="20" y="50" width="120" height="64" rx="6"/>
+          <text class="big" x="80" y="80" text-anchor="middle">x_t</text>
+          <text class="mono" x="80" y="101" text-anchor="middle">1×28×28</text>
+
+          <rect class="fm io" x="230" y="30" width="240" height="104" rx="8"/>
+          <text class="big" x="350" y="78" text-anchor="middle">U-Net</text>
+          <text class="muted" x="350" y="100" text-anchor="middle">ConvBlock 5개</text>
+
+          <text class="muted" x="630" y="40" text-anchor="middle">예측한 노이즈</text>
+          <rect class="fm up" x="560" y="50" width="140" height="64" rx="6"/>
+          <text class="big" x="630" y="80" text-anchor="middle">ε̂</text>
+          <text class="mono" x="630" y="101" text-anchor="middle">1×28×28</text>
+
+          <line class="arr fg" x1="142" y1="82" x2="228" y2="82" marker-end="url(#ah3-fg)"/>
+          <line class="arr fg" x1="472" y1="82" x2="558" y2="82" marker-end="url(#ah3-fg)"/>
+
+          <rect class="fm io" x="230" y="176" width="56" height="36" rx="6"/>
+          <text class="mono" x="258" y="199" text-anchor="middle">t</text>
+          <rect class="fm skip" x="330" y="176" width="150" height="36" rx="6"/>
+          <text class="mono" x="405" y="199" text-anchor="middle">pos_encoding(t)</text>
+          <line class="arr fg" x1="288" y1="194" x2="328" y2="194" marker-end="url(#ah3-fg)"/>
+          <line class="arr skip" x1="405" y1="174" x2="405" y2="137" marker-end="url(#ah2-skip)"/>
+          <text class="k-skip" x="416" y="161">v를 각 ConvBlock에 더함</text>
+        </svg>
+      </div>
+      <figcaption>U-Net의 입출력 모양은 그대로이고, 시간 정보 v가 들어가는 경로만 추가됩니다.</figcaption>
+    </figure>
+    <p>ConvBlock이 v를 받는 일반적인 방식은 다음과 같습니다. 다음 노트북의 실제 구현과 세부는 다를 수 있습니다.</p>
+<pre class="snippet"><span class="cm"># 시간 벡터 v를 받도록 바꾼 ConvBlock.forward의 일반적인 형태</span>
+def forward(self, x, v):          <span class="cm"># v: pos_encoding(t)로 만든 벡터</span>
+    N, C, _, _ = x.shape
+    v = self.mlp(v)               <span class="cm"># Linear로 길이를 채널 수 C에 맞춘다</span>
+    v = v.view(N, C, 1, 1)        <span class="cm"># 채널마다 숫자 하나가 된다</span>
+    return self.convs(x + v)      <span class="cm"># 같은 채널의 모든 픽셀에 같은 값을 더한다</span></pre>
+  </section>
+</div>
+
+<script>
+(function () {
+  var codeLines = [
+    'def forward(self, x):',
+    '    x1 = self.down1(x)',
+    '    x = self.maxpool(x1)',
+    '',
+    '    x2 = self.down2(x)',
+    '    x = self.maxpool(x2)',
+    '',
+    '    x = self.bot1(x)',
+    '',
+    '    x = self.upsample(x)',
+    '    x = torch.cat([x, x2], dim=1)',
+    '    x = self.up2(x)',
+    '    x = self.upsample(x)',
+    '    x = torch.cat([x, x1], dim=1)  # 스킵 연결',
+    '    x = self.up1(x)',
+    '    x = self.out(x)',
+    '    return x'
+  ];
+
+  var steps = [
+    { title: '전체 흐름', line: -1, shape: '1×28×28 → 1×28×28', def: '',
+      text: '입력과 출력의 모양이 같습니다. 왼쪽으로 내려가며 가로세로를 절반씩 두 번 줄이고 채널을 늘린 뒤, 오른쪽으로 올라가며 다시 키웁니다. 점선 화살표는 같은 해상도끼리 직접 잇는 스킵 연결입니다. 다음 버튼을 누르면 forward()를 한 줄씩 따라갑니다.' },
+    { title: '입력', line: 0, shape: '10×1×28×28', def: 'x = torch.randn(10, 1, 28, 28)',
+      text: '배치 10장, 채널 1개(흑백), 가로세로 28픽셀인 텐서가 들어옵니다. 그림의 모양 표기는 배치 차원을 빼고 채널×세로×가로 순서로 적었습니다.' },
+    { title: 'down1', line: 1, shape: '1×28×28 → 64×28×28', def: 'self.down1 = ConvBlock(in_ch, 64)',
+      text: 'ConvBlock은 3×3 합성곱, BatchNorm, ReLU를 두 번 반복합니다. padding=1이라서 가로세로는 그대로이고 채널만 1개에서 64개로 늘어납니다. 결과를 x1에 저장하는 이유는 마지막 스킵 연결에서 다시 쓰기 때문입니다.' },
+    { title: 'maxpool', line: 2, shape: '64×28×28 → 64×14×14', def: 'self.maxpool = nn.MaxPool2d(2)',
+      text: '2×2 영역마다 가장 큰 값 하나만 남겨서 가로세로를 절반으로 줄입니다. 채널 수는 바뀌지 않고, 학습하는 파라미터도 없습니다.' },
+    { title: 'down2', line: 4, shape: '64×14×14 → 128×14×14', def: 'self.down2 = ConvBlock(64, 128)',
+      text: '해상도가 절반이 된 대신 채널을 128개로 늘립니다. 이 결과도 x2로 저장해 둡니다.' },
+    { title: 'maxpool', line: 5, shape: '128×14×14 → 128×7×7', def: 'self.maxpool = nn.MaxPool2d(2)',
+      text: '한 번 더 절반으로 줄입니다. 이제 7×7의 한 칸이 원본의 4×4 픽셀 영역에 대응합니다.' },
+    { title: 'bot1', line: 7, shape: '128×7×7 → 256×7×7', def: 'self.bot1 = ConvBlock(128, 256)',
+      text: '가장 깊은 곳입니다. 합성곱과 풀링이 쌓여서 이 층의 한 칸은 원본에서 32×32 넓이의 영역을 볼 수 있고, 가운데 칸은 28×28 이미지 전체를 봅니다. 그래서 이미지 전체의 내용은 담지만, 해상도가 7×7이라 획의 정확한 위치는 거칠게만 남습니다.' },
+    { title: 'upsample', line: 9, shape: '256×7×7 → 256×14×14', def: "self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')",
+      text: '쌍선형 보간으로 가로세로를 2배로 늘립니다. 주변 값을 섞어 빈칸을 채울 뿐이고 새로운 정보가 생기지는 않습니다. 이 연산도 학습하는 파라미터가 없습니다.' },
+    { title: 'cat [x, x2]', line: 10, shape: '256×14×14 + 128×14×14 → 384×14×14', def: 'self.up2 = ConvBlock(128 + 256, 128)',
+      text: '저장해 둔 x2를 채널 방향(dim=1)으로 이어붙입니다. 가로세로가 같아야 이어붙일 수 있고, 채널은 256 + 128 = 384개가 됩니다. up2의 입력 채널을 128 + 256으로 적은 이유가 이것입니다.' },
+    { title: 'up2', line: 11, shape: '384×14×14 → 128×14×14', def: 'self.up2 = ConvBlock(128 + 256, 128)',
+      text: '합성곱이 upsample로 키운 정보와 x2의 정보를 섞으면서 채널을 128개로 줄입니다.' },
+    { title: 'upsample', line: 12, shape: '128×14×14 → 128×28×28', def: "self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')",
+      text: '다시 가로세로를 2배로 늘려서 원래 해상도인 28×28로 돌아옵니다.' },
+    { title: 'cat [x, x1]', line: 13, shape: '128×28×28 + 64×28×28 → 192×28×28', def: 'self.up1 = ConvBlock(128 + 64, 64)',
+      text: '첫 단계에서 저장한 x1을 이어붙입니다. x1은 한 번도 줄어들지 않은 28×28 정보라서 획의 정확한 위치를 그대로 가지고 있습니다. 채널은 128 + 64 = 192개입니다.' },
+    { title: 'up1', line: 14, shape: '192×28×28 → 64×28×28', def: 'self.up1 = ConvBlock(128 + 64, 64)',
+      text: '두 정보를 합성곱으로 섞으면서 채널을 64개로 줄입니다.' },
+    { title: 'out', line: 15, shape: '64×28×28 → 1×28×28', def: 'self.out = nn.Conv2d(64, in_ch, 1)',
+      text: '1×1 합성곱은 픽셀마다 64개 채널 값을 가중합해서 1개로 만듭니다. 출력은 입력과 같은 1×28×28이고, 노트북의 print(y.shape)가 (10, 1, 28, 28)을 출력하는 것과 일치합니다.' }
+  ];
+  var last = steps.length - 1;
+  var cur = 0;
+
+  var codeEl = document.getElementById('code');
+  codeLines.forEach(function (t, i) {
+    var s = document.createElement('span');
+    s.className = 'ln';
+    s.dataset.line = String(i);
+    var hash = t.indexOf('#');
+    if (hash >= 0) {
+      s.appendChild(document.createTextNode(t.slice(0, hash)));
+      var c = document.createElement('span');
+      c.className = 'cm';
+      c.textContent = t.slice(hash);
+      s.appendChild(c);
+    } else {
+      s.textContent = t || ' ';
+    }
+    codeEl.appendChild(s);
+  });
+
+  var chips = document.getElementById('chips');
+  for (var i = 1; i <= last; i++) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip';
+    b.textContent = String(i);
+    b.setAttribute('aria-label', i + '단계 ' + steps[i].title);
+    b.dataset.step = String(i);
+    b.addEventListener('click', function (e) { go(+e.currentTarget.dataset.step); });
+    chips.appendChild(b);
+  }
+
+  var groups = document.querySelectorAll('#unet [data-step]');
+  var lines = codeEl.querySelectorAll('.ln');
+  var prev = document.getElementById('prev');
+  var next = document.getElementById('next');
+
+  function render() {
+    groups.forEach(function (g) {
+      var j = +g.dataset.step;
+      g.classList.toggle('active', cur > 0 && j === cur);
+      g.classList.toggle('future', cur > 0 && j > cur);
+    });
+    var st = steps[cur];
+    lines.forEach(function (l) { l.classList.toggle('on', +l.dataset.line === st.line); });
+    chips.querySelectorAll('.chip').forEach(function (c) {
+      c.setAttribute('aria-pressed', String(+c.dataset.step === cur));
+    });
+    document.getElementById('sNo').textContent = cur === 0 ? '전체' : cur + ' / ' + last;
+    document.getElementById('sTitle').textContent = st.title;
+    document.getElementById('sShape').textContent = st.shape;
+    var d = document.getElementById('sDef');
+    d.textContent = st.def;
+    d.hidden = !st.def;
+    document.getElementById('sText').textContent = st.text;
+    prev.disabled = cur === 0;
+    next.disabled = cur === last;
+  }
+  function go(k) { cur = Math.max(0, Math.min(last, k)); render(); }
+
+  prev.addEventListener('click', function () { go(cur - 1); });
+  next.addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('all').addEventListener('click', function () { go(0); });
+  document.addEventListener('keydown', function (e) {
+    var tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (e.key === 'ArrowRight') { go(cur + 1); }
+    if (e.key === 'ArrowLeft') { go(cur - 1); }
+  });
+  render();
+
+  // 해상도 비교: 노트북과 같은 maxpool(2) 두 번, bilinear upsample(×2) 두 번
+  function maxpool(a, n) {
+    var m = n / 2, o = new Float32Array(m * m);
+    for (var y = 0; y < m; y++) for (var x = 0; x < m; x++) {
+      var i0 = 2 * y * n + 2 * x;
+      o[y * m + x] = Math.max(a[i0], a[i0 + 1], a[i0 + n], a[i0 + n + 1]);
+    }
+    return o;
+  }
+  function upsample(a, n) {
+    var m = n * 2, o = new Float32Array(m * m);
+    function src(d) { var s = (d + 0.5) / 2 - 0.5; return s < 0 ? 0 : s; }
+    for (var y = 0; y < m; y++) {
+      var sy = src(y), y0 = Math.floor(sy), y1 = Math.min(y0 + 1, n - 1), wy = sy - y0;
+      for (var x = 0; x < m; x++) {
+        var sx = src(x), x0 = Math.floor(sx), x1 = Math.min(x0 + 1, n - 1), wx = sx - x0;
+        var top = a[y0 * n + x0] * (1 - wx) + a[y0 * n + x1] * wx;
+        var bot = a[y1 * n + x0] * (1 - wx) + a[y1 * n + x1] * wx;
+        o[y * m + x] = top * (1 - wy) + bot * wy;
+      }
+    }
+    return o;
+  }
+  function paint(id, a, n) {
+    var cv = document.getElementById(id);
+    if (!cv) return;
+    var g = cv.getContext('2d');
+    var img = g.createImageData(n, n);
+    for (var i = 0; i < n * n; i++) {
+      var v = Math.round(Math.max(0, Math.min(1, a[i])) * 255);
+      img.data[i * 4] = v; img.data[i * 4 + 1] = v; img.data[i * 4 + 2] = v; img.data[i * 4 + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+  }
+  function drawDemo() {
+    var N = 28, c = document.createElement('canvas');
+    c.width = N; c.height = N;
+    var g = c.getContext('2d');
+    g.fillStyle = '#000'; g.fillRect(0, 0, N, N);
+    g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    g.font = '600 25px "IBM Plex Sans KR", "Helvetica Neue", Arial, sans-serif';
+    g.fillText('3', 14, 24);
+    var px = g.getImageData(0, 0, N, N).data, a = new Float32Array(N * N);
+    for (var i = 0; i < N * N; i++) a[i] = px[i * 4] / 255;
+    var p2 = maxpool(maxpool(a, 28), 14);
+    var u2 = upsample(upsample(p2, 7), 14);
+    paint('cv-a', a, 28); paint('cv-b', p2, 7); paint('cv-c', u2, 28);
+  }
+  drawDemo();
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(drawDemo).catch(function () {}); }
+})();
+</script>
+
+</html>
