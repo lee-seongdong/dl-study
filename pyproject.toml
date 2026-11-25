@@ -13,6 +13,8 @@ dependencies = [
     "torchaudio",
     "scipy>=1.18.1",
     "tqdm>=4.70.1",
+    "diffusers>=0.43.0",
+    "transformers>=5.23.0",
 ]
 
 [dependency-groups]
